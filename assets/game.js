@@ -1,40 +1,224 @@
-// elementos de debug:
-let cantPlataformas = 0;
-let cantMonedas = 0;
 
-const divDebug = document.getElementById('debug');
-
-function updateDebug(){
-    cantPlataformas=platforms.length;
-    cantMonedas=coins.length;
-    
-    divDebug.innerHTML=`- Plataforms: ${cantPlataformas} <br>- Coins: ${cantMonedas}`;
-}    
-
-
-const canvas = document.getElementById('gameCanvas');
-const canvasContainer = document.getElementById('canvas-container');
-const ctx = canvas.getContext('2d');
-
-canvas.width = canvasContainer.clientWidth;
-canvas.height = canvasContainer.clientHeight;
-
-var imagesToLoad = [
-    { name: 'backgroundImage', src: 'assets/imgs/gamebackground2.png' }, 
-    { name: 'backgroundImage2', src: 'assets/imgs/gamebackground2.png' }, 
-    { name: 'characterImage1', src: 'assets/imgs/character1.png' }, 
-    { name: 'characterImage2', src: 'assets/imgs/character2.png' }, 
-    { name: 'floorImage', src: 'assets/imgs/lavafloor.png' }, 
-    { name: 'explosionImage', src: 'assets/imgs/T-fireexplosion.png' } // Add explosionImage variable here
-];
 var images = {};
-
+    
 let gameOver = false;
 let highScore = 0; // Add highScore variable here
 let animationFrame = 0; // Set the initial value of animationFrame to 0
 
+    
+    const canvas = document.getElementById('gameCanvas');    
+    const canvasContainer = document.getElementById('canvas-container');
+    let ctx;
 
-function loadImages() {
+
+    const platforms = [];
+    const coins = [];
+    const keys = {};
+    
+
+
+    // Array of image Objects to create and Load
+    var imagesToLoad = [
+        { name: 'backgroundImage', src: 'assets/imgs/gamebackground2.png' }, 
+        { name: 'backgroundImage2', src: 'assets/imgs/gamebackground2.png' }, 
+        { name: 'characterImage1', src: 'assets/imgs/character1.png' }, 
+        { name: 'characterImage2', src: 'assets/imgs/character2.png' }, 
+        { name: 'floorImage', src: 'assets/imgs/lavafloor.png' }, 
+        { name: 'explosionImage', src: 'assets/imgs/T-fireexplosion.png' } // Add explosionImage variable here
+    ];
+    
+    
+    
+    const divDebug = document.getElementById('debug');
+    
+    // elementos de debug:
+    let cantPlataformas = 0;
+    let cantMonedas = 0;
+     
+
+    // Set the canvas width and height to the size of the browser window or defined in CSS
+    canvas.width = canvasContainer.clientWidth;
+    canvas.height = canvasContainer.clientHeight;
+
+    
+    
+    
+   
+    
+    const camera = {
+        x: 0,
+        y: 0,
+        width: canvas.width,
+        height: canvas.height,
+        update: function () {
+            this.x = player.x - this.width / 2;
+    
+            // Ensure the camera doesn't move too far to the left
+            if (this.x < 0) {
+                this.x = 0;
+            }
+        },
+    };
+    
+    const player = {
+        x: 50,
+        y: canvas.height - 150 - 50, // Subtract 50 (player's height) to make the player start on the first platform
+        width: 30,
+        height: 50,
+        velocityX: 0,
+        velocityY: 0,
+        isJumping: false,
+        speed: 4,
+        jumpHeight: 12,
+        score: 0,
+        explosionCounter: 0, // Add explosionCounter property here
+        currentImage: null,
+        // steps of running player
+        playerImageFrame1: null,//images['characterImage1'],    // 2 foot
+        playerImageFrame2: null,//images['characterImage2']     // 1 foot
+    };
+    
+
+    
+    class Platform {
+        constructor(x, y, width, height, color) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.color = color;
+        }
+    
+        draw() {
+            ctx.fillStyle = this.color;
+    
+            // Set the radius for the rounded edges
+            const radius = 10;
+    
+            // Create a custom path for the rounded rectangle
+            ctx.beginPath();
+            ctx.moveTo(this.x + radius, this.y);
+            ctx.lineTo(this.x + this.width - radius, this.y);
+            ctx.quadraticCurveTo(this.x + this.width, this.y, this.x + this.width, this.y + radius);
+            ctx.lineTo(this.x + this.width, this.y + this.height - radius);
+            ctx.quadraticCurveTo(this.x + this.width, this.y + this.height, this.x + this.width - radius, this.y + this.height);
+            ctx.lineTo(this.x + radius, this.y + this.height);
+            ctx.quadraticCurveTo(this.x, this.y + this.height, this.x, this.y + this.height - radius);
+            ctx.lineTo(this.x, this.y + radius);
+            ctx.quadraticCurveTo(this.x, this.y, this.x + radius, this.y);
+            ctx.closePath();
+    
+            ctx.fill();
+    
+            // Add a white border to the platform
+            ctx.strokeStyle = 'white'; // Set the border color to white
+            ctx.lineWidth = 2; // Set the border width to 2 pixels
+            ctx.stroke(); // Draw the border
+        }
+    }
+    
+    class Coin {
+        constructor(x, y, radius, color) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.color = color;
+            this.rotation = 0; // Add rotation property
+        }
+    
+        draw() {
+            // Update the rotation
+            this.rotation += 0.1;
+            if (this.rotation >= Math.PI * 2) {
+                this.rotation = 0;
+            }
+    
+            // Calculate the current width of the ellipse based on the rotation value
+            const currentWidth = this.radius * (1 - 0.5 * Math.abs(Math.sin(this.rotation)));
+    
+            // Draw the coin as an ellipse with varying width and the same yellow color
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.ellipse(
+                this.x - camera.x,
+                this.y,
+                currentWidth,
+                this.radius,
+                0,
+                0,
+                Math.PI * 2
+            );
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+    
+
+    
+    // ----------------------------------- Start Listeners -----------------------------------
+    window.addEventListener('keydown', (event) => { 
+        if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'KeyA', 'KeyD', 'KeyW', 'Space'].includes(event.code)) {
+            event.preventDefault();
+        }
+        keys[event.code] = true;
+    });
+    
+    
+    window.addEventListener('keyup', (event) => {
+        keys[event.code] = false;
+    });
+    
+    window.addEventListener('keydown', (event) => {
+        if (event.code === 'KeyN') {
+            switchLevel();
+        }
+    });
+    
+    canvas.addEventListener('click', (event) => {
+        if (gameOver) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+    
+            const buttonX = canvas.width / 2 - 60;
+            const buttonY = canvas.height / 2 + 20;
+            const buttonWidth = 120;
+            const buttonHeight = 40;
+    
+            if (
+                x >= buttonX &&
+                x <= buttonX + buttonWidth &&
+                y >= buttonY &&
+                y <= buttonY + buttonHeight
+            ) {
+                resetGame();
+            }
+        }
+    });
+
+    // ----------------------------------- End Listeners -----------------------------------
+
+
+
+function gameLoop() {
+    update();
+    render();
+    requestAnimationFrame(gameLoop);
+}
+
+ 
+const updateDebug =function (){
+    cantPlataformas=platforms.length;
+    cantMonedas=coins.length;
+    
+    divDebug.innerHTML=`- Plataforms: ${cantPlataformas} <br>
+    - Coins: ${cantMonedas} <br>
+    - Explosion: ${player.explosionCounter} <br>
+    - particles: ${particles.length} <br>`;
+}   
+
+
+const loadImages = () => {
     var imagesLoaded = 0;
     var numImages = imagesToLoad.length;
   
@@ -55,131 +239,24 @@ function loadImages() {
       image.src = imagesToLoad[i].src;
       images[imageName] = image;
     }
+}
+
+
+var max = 60; // 60 fps
+var speed=3;
+var size=10;
+var particles = [];
+//The class we will use to store particles. It includes x and y
+//coordinates, horizontal and vertical speed, and how long it's
+//been "alive" for.
+function Particle(x, y, xs, ys) {
+    this.x=x;
+    this.y=y;
+    this.xs=xs;
+    this.ys=ys;
+    this.life=0;
   }
 
-
-const camera = {
-    x: 0,
-    y: 0,
-    width: canvas.width,
-    height: canvas.height,
-    update: function () {
-        this.x = player.x - this.width / 2;
-
-        // Ensure the camera doesn't move too far to the left
-        if (this.x < 0) {
-            this.x = 0;
-        }
-    },
-};
-
-const player = {
-    x: 50,
-    y: canvas.height - 150 - 50, // Subtract 50 (player's height) to make the player start on the first platform
-    width: 30,
-    height: 50,
-    velocityX: 0,
-    velocityY: 0,
-    isJumping: false,
-    speed: 4,
-    jumpHeight: 12,
-    score: 0,
-    explosionCounter: 0, // Add explosionCounter property here
-    currentImage: null,
-    // steps of running player
-    playerImageFrame1: null,//images['characterImage1'],    // 2 foot
-    playerImageFrame2: null,//images['characterImage2']     // 1 foot
-};
-
-function setPlayerPositionOnPlatform(platform) {
-    //player.currentimage=playerImageFrame1;
-    player.x = platform.x;
-    player.y = platform.y - player.height  -  100; // 100px mas arriba de la 1er plataforma.
-}
-
-class Platform {
-    constructor(x, y, width, height, color) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.color = color;
-    }
-
-    draw() {
-        ctx.fillStyle = this.color;
-
-        // Set the radius for the rounded edges
-        const radius = 10;
-
-        // Create a custom path for the rounded rectangle
-        ctx.beginPath();
-        ctx.moveTo(this.x + radius, this.y);
-        ctx.lineTo(this.x + this.width - radius, this.y);
-        ctx.quadraticCurveTo(this.x + this.width, this.y, this.x + this.width, this.y + radius);
-        ctx.lineTo(this.x + this.width, this.y + this.height - radius);
-        ctx.quadraticCurveTo(this.x + this.width, this.y + this.height, this.x + this.width - radius, this.y + this.height);
-        ctx.lineTo(this.x + radius, this.y + this.height);
-        ctx.quadraticCurveTo(this.x, this.y + this.height, this.x, this.y + this.height - radius);
-        ctx.lineTo(this.x, this.y + radius);
-        ctx.quadraticCurveTo(this.x, this.y, this.x + radius, this.y);
-        ctx.closePath();
-
-        ctx.fill();
-
-        // Add a white border to the platform
-        ctx.strokeStyle = 'white'; // Set the border color to white
-        ctx.lineWidth = 2; // Set the border width to 2 pixels
-        ctx.stroke(); // Draw the border
-    }
-}
-
-class Coin {
-    constructor(x, y, radius, color) {
-        this.x = x;
-        this.y = y;
-        this.radius = radius;
-        this.color = color;
-        this.rotation = 0; // Add rotation property
-    }
-
-    draw() {
-        // Update the rotation
-        this.rotation += 0.1;
-        if (this.rotation >= Math.PI * 2) {
-            this.rotation = 0;
-        }
-
-        // Calculate the current width of the ellipse based on the rotation value
-        const currentWidth = this.radius * (1 - 0.5 * Math.abs(Math.sin(this.rotation)));
-
-        // Draw the coin as an ellipse with varying width and the same yellow color
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.ellipse(
-            this.x - camera.x,
-            this.y,
-            currentWidth,
-            this.radius,
-            0,
-            0,
-            Math.PI * 2
-        );
-        ctx.closePath();
-        ctx.fill();
-    }
-}
-
-function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-}
-
-const platforms = [];
 
 function generatePlatforms() {
     // Check if the last platform in the array is close enough to the camera's right edge
@@ -220,38 +297,6 @@ function generatePlatforms() {
     }
 }
 
-const coins = [];
-
-function generateCoins() {
-    platforms.forEach((platform) => {
-        if (!platform.coinsGenerated) {
-            const numberOfCoins = Math.floor(Math.random() * 4) + 1;
-            const coinSpacing = platform.width / (numberOfCoins + 1);
-
-            for (let i = 0; i < numberOfCoins; i++) {
-                const coinX = platform.x + coinSpacing * (i + 1);
-                const coinY = platform.y - 25;
-                coins.push(new Coin(coinX, coinY, 10, 'gold'));
-            }
-            platform.coinsGenerated = true;
-        }
-    });
-}
-
-const keys = {};
-
-window.addEventListener('keydown', (event) => {
-    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'KeyA', 'KeyD', 'KeyW', 'Space'].includes(event.code)) {
-        event.preventDefault();
-    }
-    keys[event.code] = true;
-});
-
-generatePlatforms();
-
-window.addEventListener('keyup', (event) => {
-    keys[event.code] = false;
-});
 
 function handlePlayerMovement() {
     // Horizontal movement
@@ -402,10 +447,59 @@ function resetGame() {
     generatePlatforms();
     player.explosionDrawn = false; // Add this line here to reset the explosionDrawn property when the game is reset
     player.explosionCounter = 0; // Reset the explosionCounter when the game is reset
+
+
+    //Cycle through all the particles to remove them
+    for (i=0; i<particles.length; i++) {
+        particles.splice(i, 1);
+        i--;
+    }
+}
+
+
+function characterParticles(){
+   // console.log("ejecute characterParticle");
+        
+
+
+    //Adds ten new particles every frame
+    for (var i=0; i<10; i++) {
+        //Adds a particle at the characters position, with random horizontal and vertical speeds
+        var p = new Particle(player.x+15, player.y+41, (Math.random()*2*speed-speed)/2, 0-Math.random()*2*speed);
+        particles.push(p);
+    }
+
+
+    //Cycle through all the particles to draw them
+    for (i=0; i<particles.length; i++) {
+        
+        //Set the file colour to an RGBA value where it starts off red-orange, but progressively gets more grey and transparent the longer the particle has been alive for
+        ctx.fillStyle = "rgba("+(260-(particles[i].life*2))+","+((particles[i].life*2)+50)+","+(particles[i].life*2)+","+(((max-particles[i].life)/max)*0.4)+")";
+        
+        ctx.beginPath();
+        //Draw the particle as a circle, which gets slightly smaller the longer it's been alive for
+        ctx.arc(particles[i].x,particles[i].y,(max-particles[i].life)/max*(size/2)+(size/2),0,2*Math.PI);
+        ctx.fill();
+        
+        //Move the particle based on its horizontal and vertical speeds
+        particles[i].x+=particles[i].xs;
+        particles[i].y+=particles[i].ys;
+        
+        particles[i].life++;
+        //If the particle has lived longer than we are allowing, remove it from the array.
+        if (particles[i].life >= max) {
+            particles.splice(i, 1);
+            i--;
+        }
+    }
+
 }
 
 function update() {
 
+
+
+        
     updateDebug(); // actualizo cantidades en pantalla de debug.
 
     if (!gameOver) {
@@ -414,6 +508,8 @@ function update() {
         checkGroundCollision();
         detectCoinCollision();
 
+
+        
         // Update player.isJumping value based on player's position relative to the platforms
         let onPlatform = false;
         platforms.forEach((platform) => {
@@ -473,6 +569,9 @@ function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBackground();
 
+    
+
+
     // Draw the platforms, coins, and floor
 
     // Me falta entender el ctx.Save y el ctx.Restore
@@ -480,8 +579,11 @@ function render() {
     // El UI, fuego estatico, y personaje van DESPUES del restore.
     // Fondo, plataformas y Piso van ANTES del restore.
 
+    
     // 1. save the canvas state before the camera is applied
     ctx.save();
+
+    
     ctx.translate(-camera.x, 0);
 
     // 2. draw everything that will be transformed (translate) by the camera like the platforms and background
@@ -506,6 +608,42 @@ function render() {
 }
 
 
+function setPlayerPositionOnPlatform(platform) {
+    //player.currentimage=playerImageFrame1;
+    player.x = platform.x;
+    player.y = platform.y - player.height  -  100; // 100px mas arriba de la 1er plataforma.
+}
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+function generateCoins() {
+    platforms.forEach((platform) => {
+        if (!platform.coinsGenerated) {
+            const numberOfCoins = Math.floor(Math.random() * 4) + 1;
+            const coinSpacing = platform.width / (numberOfCoins + 1);
+
+            for (let i = 0; i < numberOfCoins; i++) {
+                const coinX = platform.x + coinSpacing * (i + 1);
+                const coinY = platform.y - 25;
+                coins.push(new Coin(coinX, coinY, 10, 'gold'));
+            }
+            platform.coinsGenerated = true;
+        }
+    });
+}
+
+
+
+
+
+
+
 /**
  * Draw Functions on Canvas on each Frame of the Game called from Render()
  */
@@ -518,6 +656,11 @@ function drawCharacter() {
     if (!gameOver) {
         ctx.save();
         ctx.translate(-camera.x, 0);
+
+        
+        ctx.globalCompositeOperation="lighter";
+        characterParticles();
+        ctx.globalCompositeOperation="source-over"; // es el standard
 
         // Check if the character is moving left, and if so, flip the character image
         if (player.velocityX < 0) {
@@ -543,12 +686,15 @@ function drawCharacter() {
     }
 
     // Draw the explosion image with the same width as the character
+    // increase size for the explosión
     if (gameOver && player.explosionCounter < 50) { // Change this condition
-        const explosionWidth = characterWidth * 2; // Multiply by 2 to make the explosion larger
-        const explosionHeight = characterHeight * 2; // Multiply by 2 to make the explosion larger
+        const explosionWidth = player.explosionCounter +characterWidth * 2; // Multiply by 2 to make the explosion larger
+        const explosionHeight = player.explosionCounter + characterHeight * 2; // Multiply by 2 to make the explosion larger
 
         ctx.save();
         ctx.translate(-camera.x, 0);
+        characterParticles();
+
         ctx.drawImage(
             //explosionImage,
             images['explosionImage'],
@@ -612,6 +758,7 @@ function drawGameOverAndReset() {
     ctx.fillStyle = 'white';
     ctx.font = '20px Arial';
     ctx.fillText('Reset', canvas.width / 2 - 25, canvas.height / 2 + 45);
+
 }
 
 function drawBackground() {
@@ -661,7 +808,7 @@ function drawRoundedRect(x, y, width, height, radius, fillColor, borderColor, bo
 function drawFire(width, height) {
  
     // add some random black rectangles to simulate sparks
-    ctx.fillStyle = 'black';
+    ctx.fillStyle = 'red';
     for (var i = 0; i < 10; i++) {
         var x = Math.random() * width;
         var y = height - (Math.random() * 20) -50;
@@ -670,47 +817,21 @@ function drawFire(width, height) {
         ctx.fillRect(x, y, w, h);
     }
 }
-  
 
 
 
 
 
-function gameLoop() {
-    update();
-    render();
-    requestAnimationFrame(gameLoop);
-}
+    //See if the browser supports canvas
+    if (canvas.getContext) {
+        ctx = canvas.getContext('2d');
 
-generatePlatforms();
-
-loadImages();
-
-
-window.addEventListener('keydown', (event) => {
-    if (event.code === 'KeyN') {
-        switchLevel();
+        //filtros y efectos locos del stage / ctx
+        // ctx.globalCompositeOperation="lighter";
+        // ctx.globalCompositeOperation="xor";
+        
+        loadImages();
+        generatePlatforms();
+    } else { 
+        alert("Canvas not supported.");
     }
-});
-
-canvas.addEventListener('click', (event) => {
-    if (gameOver) {
-        const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-
-        const buttonX = canvas.width / 2 - 60;
-        const buttonY = canvas.height / 2 + 20;
-        const buttonWidth = 120;
-        const buttonHeight = 40;
-
-        if (
-            x >= buttonX &&
-            x <= buttonX + buttonWidth &&
-            y >= buttonY &&
-            y <= buttonY + buttonHeight
-        ) {
-            resetGame();
-        }
-    }
-});
