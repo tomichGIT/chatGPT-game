@@ -1,6 +1,9 @@
 # chatGPT-game
 game created by chatGPT + communtiy + YOU
+Original idea from Matt Wolfe Youtubes Channel: [I Used AI To Make A Game (ZERO Coding Experience)](https://www.youtube.com/watch?v=IyKKhxYJ4U4)
 
+
+![Screenshot number1](https://www.kukumo.net/chatGPT-game/imgs/screenshot1.png)
 
 ## Join us in creating an awesome platform game!
 Welcome to our platform game project, where we'll be using the power of ChatGPT to develop an amazing game together. In this project, we'll be creating a platformer game from scratch, sharing ideas, code snippets, and new prompts to help us along the way.
@@ -10,10 +13,13 @@ Our goal is to create a fun and engaging game that showcases the capabilities of
 ## How to join and contribute
 To join our project, all you need is an interest in game development and a willingness to learn and collaborate with others. We welcome developers of all levels and backgrounds to join us.
 
-Anyone who has a GitHub account can create a fork of the repository, make changes, and submit a pull request to have their changes merged into the main repository.
+Helping:
+- Anyone who has a GitHub account can create a fork of the repository, make changes, and submit a pull request to have their changes merged into the main repository.
+- Add ideas in projects issues section
+- Contact me however you can
+- You can also contribute by sharing your ideas, code snippets, and prompts in the project's issues and pull requests. 
 
-You can also contribute by sharing your ideas, code snippets, and prompts in the project's issues and pull requests. We welcome all contributions and feedback, and look forward to working with you!
-
+We welcome all contributions and feedback, and look forward to working with you!
 Let's create an awesome platform game together!
 
 ## What we'll be doing
