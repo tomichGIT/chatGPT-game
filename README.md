@@ -41,3 +41,27 @@ based on Matts Wolff video on youtube "[I Used AI To Make A Game (ZERO Coding Ex
 ```
 
 - Fire: `how to draw some fire ontop of the ground with canvas?`
+
+## Changelog
+
+v0.1:
+- [🎨 design] Added fire particles on top of lava.
+- [🎨 design] Set canvas width to 100%.
+- [🎨 design] Character drops on first plataform.
+- [🛠 code] Loaded all images using loadImage() method.
+- [🛠 code] Reorganized file structure for better management.
+- [🛠 code] Added DebugConsole for platforms and coins.
+- [🐜 bug] Fixed incorrect source file reference in styles.css.
+
+## Feature Requests:
+
+- [ ] Store Score in localStorage to browser reload
+- [ ] show Arcade Like table of scores
+- [ ] Levels
+- [ ] Level creator by user (drag&drop)
+- [ ] Clean UP plataform list on each level
+- [ ] Get score for amount of plataforms jumped on
+- [ ] Move some plataforms Up + Down
+- [ ] Store Score in Database (will require Social Login for auth)
+- [ ] 2 player game with same keyboard
+- [ ] 2 player game multiplayer
