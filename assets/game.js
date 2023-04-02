@@ -7,9 +7,9 @@ const divDebug = document.getElementById('debug');
 function updateDebug(){
     cantPlataformas=platforms.length;
     cantMonedas=coins.length;
-    divDebug.innerText=`Plataformas: ${cantPlataformas} - Monedas: ${cantMonedas}`;
-}
-
+    
+    divDebug.innerHTML=`- Plataforms: ${cantPlataformas} <br>- Coins: ${cantMonedas}`;
+}    
 
 
 const canvas = document.getElementById('gameCanvas');
