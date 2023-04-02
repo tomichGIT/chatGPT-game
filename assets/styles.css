@@ -1,0 +1,19 @@
+body {
+    background:black;
+    color:white;
+}
+.center{
+    margin-left:auto;
+    margin-right:auto;
+    text-align:center;
+}
+
+#canvas-container {
+    width: 100%;
+    height: 500px;
+  }
+  
+  #gameCanvas {
+    width: 100%;
+    height: 100%;
+}
