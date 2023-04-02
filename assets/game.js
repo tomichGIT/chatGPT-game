@@ -1,9 +1,11 @@
 
-var images = {};
-    
-let gameOver = false;
-let highScore = 0; // Add highScore variable here
-let animationFrame = 0; // Set the initial value of animationFrame to 0
+    var images = {};
+        
+    let gameOver = false;
+    let highScore = 0; // Add highScore variable here
+    let animationFrame = 0; // Set the initial value of animationFrame to 0
+    let frameRate="";
+    let tf_particleSystem=true;
 
     
     const canvas = document.getElementById('gameCanvas');    
@@ -11,9 +13,9 @@ let animationFrame = 0; // Set the initial value of animationFrame to 0
     let ctx;
 
 
-    const platforms = [];
-    const coins = [];
-    const keys = {};
+    let platforms = [];
+    let coins = [];
+    const keys = {}; // keboard keys
     
 
 
@@ -170,7 +172,16 @@ let animationFrame = 0; // Set the initial value of animationFrame to 0
     
     window.addEventListener('keydown', (event) => {
         if (event.code === 'KeyN') {
+            //console.log("key n");
             switchLevel();
+        }
+    });
+
+    window.addEventListener('keyup', (event) => {
+        //console.log("code: ",event.code);
+        if( event.code === 'KeyP') {
+            //console.log("key P");
+            tf_particleSystem=!tf_particleSystem;
         }
     });
     
@@ -214,7 +225,9 @@ const updateDebug =function (){
     divDebug.innerHTML=`- Plataforms: ${cantPlataformas} <br>
     - Coins: ${cantMonedas} <br>
     - Explosion: ${player.explosionCounter} <br>
-    - particles: ${particles.length} <br>`;
+    - particles: ${particles.length} <br>
+    - framerate: ${frameRate} <br>
+    `;
 }   
 
 
@@ -249,7 +262,9 @@ var particles = [];
 //The class we will use to store particles. It includes x and y
 //coordinates, horizontal and vertical speed, and how long it's
 //been "alive" for.
-function Particle(x, y, xs, ys) {
+// type: "lava"/"character"/etc
+function Particle(x, y, xs, ys, type) {
+    this.type=type;
     this.x=x;
     this.y=y;
     this.xs=xs;
@@ -341,6 +356,9 @@ function handlePlayerVerticalMovement() {
             player.velocityY = 0; // Reset player's vertical velocity when on a platform
         }
     });
+
+        // Update player.isJumping value based on player's position relative to the platforms
+//        player.isJumping = !onPlatform;
 
     // Jumping
     if (
@@ -444,48 +462,73 @@ function resetGame() {
     camera.x = 0;
     platforms.length = 0;
     coins.length = 0;
-    generatePlatforms();
     player.explosionDrawn = false; // Add this line here to reset the explosionDrawn property when the game is reset
     player.explosionCounter = 0; // Reset the explosionCounter when the game is reset
 
 
-    //Cycle through all the particles to remove them
-    for (i=0; i<particles.length; i++) {
-        particles.splice(i, 1);
-        i--;
-    }
+    particles=[]; // reset particles
+    platforms=[]; // reset platforms
+    coins=[]; // reset coins
+    
+    generatePlatforms();
+
+    // //Cycle through all the particles to remove them
+    // for (i=0; i<particles.length; i++) {
+    //     particles.splice(i, 1);
+    //     i--;
+    // }
 }
 
+function lavaParticles(){
 
-function characterParticles(){
-   // console.log("ejecute characterParticle");
-        
+    //ctx.globalCompositeOperation="xor";
+    drawParticles("lava");
 
+    // if particle system is off, don't draw particles
+    if(!tf_particleSystem){ return; }
 
     //Adds ten new particles every frame
     for (var i=0; i<10; i++) {
+
+        // Generate a random X position anywhere on the canvas, and a random starting Y position at the bottom of the canvas
+        var x = Math.random() * canvas.width;
+        var y = canvas.height - Math.floor(Math.random() * 50);
+        
         //Adds a particle at the characters position, with random horizontal and vertical speeds
-        var p = new Particle(player.x+15, player.y+41, (Math.random()*2*speed-speed)/2, 0-Math.random()*2*speed);
+        var p = new Particle(x, y, (Math.random()*2*speed-speed)/2, 0-Math.random()*2*speed/4, "lava");
         particles.push(p);
     }
 
+    
+    //ctx.globalCompositeOperation="source-over"; // es el standar
+}
 
+//type "lava", "character", "explosion", "etc"
+function drawParticles(tipo){
+
+
+    const psize=size/2;
     //Cycle through all the particles to draw them
     for (i=0; i<particles.length; i++) {
+            
+        // solo dibuja las particulas del tipo solicitado
+            if(particles[i].type == tipo){
+            //Set the file colour to an RGBA value where it starts off red-orange, but progressively gets more grey and transparent the longer the particle has been alive for
+            ctx.fillStyle = "rgba("+(260-(particles[i].life*2))+","+((particles[i].life*2)+50)+","+(particles[i].life*2)+","+(((max-particles[i].life)/max)*0.4)+")";
+
+            // Draw the particle as a circle, which gets slightly smaller the longer it's been alive for
+            ctx.beginPath();
+            ctx.arc(particles[i].x,particles[i].y, (max - particles[i].life) / max * (psize) + (psize), 0, 2 * Math.PI);
+            ctx.fill();
+
+             //Move the particle based on its horizontal and vertical speeds
+             particles[i].x+=particles[i].xs;
+             particles[i].y+=particles[i].ys;
         
-        //Set the file colour to an RGBA value where it starts off red-orange, but progressively gets more grey and transparent the longer the particle has been alive for
-        ctx.fillStyle = "rgba("+(260-(particles[i].life*2))+","+((particles[i].life*2)+50)+","+(particles[i].life*2)+","+(((max-particles[i].life)/max)*0.4)+")";
-        
-        ctx.beginPath();
-        //Draw the particle as a circle, which gets slightly smaller the longer it's been alive for
-        ctx.arc(particles[i].x,particles[i].y,(max-particles[i].life)/max*(size/2)+(size/2),0,2*Math.PI);
-        ctx.fill();
-        
-        //Move the particle based on its horizontal and vertical speeds
-        particles[i].x+=particles[i].xs;
-        particles[i].y+=particles[i].ys;
-        
+         }
+        //Increase the particle's life by one
         particles[i].life++;
+
         //If the particle has lived longer than we are allowing, remove it from the array.
         if (particles[i].life >= max) {
             particles.splice(i, 1);
@@ -495,61 +538,59 @@ function characterParticles(){
 
 }
 
+function characterParticles(){
+
+    ctx.globalCompositeOperation="lighter";
+    drawParticles("character");
+    ctx.globalCompositeOperation="source-over"; // es el standar
+
+    // if particle system is off, don't draw particles
+    if(!tf_particleSystem){ return; }
+    // if player is not moving, don't draw particles
+    if(!gameOver && player.velocityX == 0) { return;}
+
+    //Adds ten new particles every frame
+    for (var i=0; i<3; i++) {
+
+        var y=player.y+43;
+        var x= (player.velocityX > 0) ? player.x+5 : player.x+20; // player going left or right
+        // if(player.velocityX > 0) { // si va para la izquierda
+        //     var x=player.x+5; 
+        // }else {  // si va para la derecha
+        //     var x=player.x+20;
+        // }
+        var p = new Particle(x, y, (Math.random()*2*speed-speed)/2, 0-Math.random()*2*speed/10, "character");
+        particles.push(p);
+    }
+
+ 
+  
+}
+
 function update() {
 
-
-
-        
     updateDebug(); // actualizo cantidades en pantalla de debug.
 
     if (!gameOver) {
+
+        
+        const prevX = player.x; // Store the player's x position before handling movement
+        
         handlePlayerVerticalMovement();
+        handlePlayerMovement();
+
+        // detect Collisions
         detectPlatformCollision();
         checkGroundCollision();
         detectCoinCollision();
 
-
-        
-        // Update player.isJumping value based on player's position relative to the platforms
-        let onPlatform = false;
-        platforms.forEach((platform) => {
-            if (
-                player.x < platform.x + platform.width &&
-                player.x + player.width > platform.x &&
-                player.y + player.height === platform.y
-            ) {
-                onPlatform = true;
-            }
-        });
-        player.isJumping = !onPlatform;
-
-        const prevX = player.x; // Store the player's x position before handling movement
-        handlePlayerMovement();
-        generateCoins();
-        detectCoinCollision();
 
         // Update player.velocityX based on the change in player.x
         player.velocityX = player.x - prevX;
 
         camera.update();
 
-        // Update the current character image
-        if (player.isJumping) {
-            player.currentImage = player.playerImageFrame1;
-            animationFrame = 0; // Reset animationFrame when the player is jumping
-        } else {
-            if (keys['ArrowLeft'] || keys['KeyA'] || keys['ArrowRight'] || keys['KeyD']) {
-                // Increment animationFrame only when the player is moving horizontally
-                animationFrame++;
-            } else {
-                animationFrame = 0; // Reset animationFrame when the player is not moving horizontally
-            }
-            if (animationFrame % 20 < 10) {
-                player.currentImage = player.playerImageFrame1;
-            } else {
-                player.currentImage = player.playerImageFrame2;
-            }
-        }
+        
 
         // Generate new platforms as the player moves
         generatePlatforms();
@@ -570,8 +611,6 @@ function render() {
     drawBackground();
 
     
-
-
     // Draw the platforms, coins, and floor
 
     // Me falta entender el ctx.Save y el ctx.Restore
@@ -625,7 +664,7 @@ function getRandomColor() {
 function generateCoins() {
     platforms.forEach((platform) => {
         if (!platform.coinsGenerated) {
-            const numberOfCoins = Math.floor(Math.random() * 4) + 1;
+            const numberOfCoins = Math.floor(Math.random() * 4) + 1; //between 1 and 4 coins
             const coinSpacing = platform.width / (numberOfCoins + 1);
 
             for (let i = 0; i < numberOfCoins; i++) {
@@ -649,6 +688,25 @@ function generateCoins() {
  */
 
 function drawCharacter() {
+
+    // Update the current character image
+    if (player.isJumping) {
+        player.currentImage = player.playerImageFrame1;
+        animationFrame = 0; // Reset animationFrame when the player is jumping
+    } else {
+        if (keys['ArrowLeft'] || keys['KeyA'] || keys['ArrowRight'] || keys['KeyD']) {
+            // Increment animationFrame only when the player is moving horizontally
+            animationFrame++;
+        } else {
+            animationFrame = 0; // Reset animationFrame when the player is not moving horizontally
+        }
+        if (animationFrame % 20 < 10) {
+            player.currentImage = player.playerImageFrame1;
+        } else {
+            player.currentImage = player.playerImageFrame2;
+        }
+    }
+
     const characterHeight = player.height;
     const characterWidth = player.width; //(images['characterImage1'].width / images['characterImage1'].height) * characterHeight;
 
@@ -657,11 +715,11 @@ function drawCharacter() {
         ctx.save();
         ctx.translate(-camera.x, 0);
 
-        
-        ctx.globalCompositeOperation="lighter";
+        // Draw the Characters particles (before ctx.restore)
+       // ctx.globalCompositeOperation="lighter";
         characterParticles();
-        ctx.globalCompositeOperation="source-over"; // es el standard
-
+       // ctx.globalCompositeOperation="source-over"; // es el standar
+        
         // Check if the character is moving left, and if so, flip the character image
         if (player.velocityX < 0) {
             ctx.scale(-1, 1);
@@ -683,7 +741,13 @@ function drawCharacter() {
         }
 
         ctx.restore();
+       lavaParticles();
+
     }
+
+     // Draw the Lava particles (after ctx.restore)
+     ctx.globalCompositeOperation="lighter";
+     ctx.globalCompositeOperation="source-over"; // es el standard
 
     // Draw the explosion image with the same width as the character
     // increase size for the explosión
@@ -807,6 +871,9 @@ function drawRoundedRect(x, y, width, height, radius, fillColor, borderColor, bo
 
 function drawFire(width, height) {
  
+    // this particle system is not as expensive as the other one
+    // if(!tf_particleSystem){ return; }
+    
     // add some random black rectangles to simulate sparks
     ctx.fillStyle = 'red';
     for (var i = 0; i < 10; i++) {
@@ -835,3 +902,41 @@ function drawFire(width, height) {
     } else { 
         alert("Canvas not supported.");
     }
+
+
+
+
+
+    // Define variables to store the time of the last frame and the current frame
+var lastFrameTime = 0;
+var currentFrameTime = 0;
+
+// Define a variable to store the number of frames that have been rendered
+var frameCount = 0;
+
+// Define a function that will be called on every animation frame
+function animate() {
+  // Request the next animation frame
+  window.requestAnimationFrame(animate);
+  
+  // Calculate the time since the last frame in milliseconds
+  currentFrameTime = window.performance.now();
+  //var deltaTime = currentFrameTime - lastFrameTime;
+  
+  // Increment the frame count
+  frameCount++;
+  
+  // Output the frame rate every second
+  if (currentFrameTime > lastFrameTime + 1000) {
+    var fps = frameCount / ((currentFrameTime - lastFrameTime) / 1000);
+    //console.log("Frame rate: " + fps.toFixed(2) + " FPS");
+    frameRate= fps.toFixed(2) + " FPS";
+    frameCount = 0;
+    lastFrameTime = currentFrameTime;
+  }
+  
+  // Do your animation logic here
+}
+
+// Start the animation loop
+window.requestAnimationFrame(animate);
