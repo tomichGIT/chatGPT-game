@@ -3,7 +3,7 @@ game created by chatGPT + communtiy + YOU
 Original idea from Matt Wolfe Youtubes Channel: [I Used AI To Make A Game (ZERO Coding Experience)](https://www.youtube.com/watch?v=IyKKhxYJ4U4)
 
 
-![Fire Screenshot](https://www.kukumo.net/chatGPT-game/imgs/screenshot1.png)
+![Fire Screenshot](https://www.kukumo.net/chatGPT-game/imgs/screenshot3.png)
 
 
 ## Join us in creating an awesome platform game!
