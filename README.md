@@ -51,7 +51,7 @@ based on Matts Wolff video on youtube "[I Used AI To Make A Game (ZERO Coding Ex
 
 ## Changelog
 
-v0.1:
+v0.1.0:
 - [🎨 design] Added fire particles on top of lava.
 - [🎨 design] Set canvas width to 100%.
 - [🎨 design] Character drops on first plataform.
@@ -60,15 +60,24 @@ v0.1:
 - [🛠 code] Added DebugConsole for platforms and coins.
 - [🐜 bug] Fixed incorrect source file reference in styles.css.
 
+v0.1.1:
+- [🛠 feature] Let you choose your nickname
+- [🛠 feature] Score table top10
+- [🛠 feature] API to save scores in json
+- [🛠 feature] API to store gameData
+- [🎨 design] New Particle system for player + lava
+- [🎨 design] Ensable/Disable Particle System key (N)
+
 ## Feature Requests:
 
-- [ ] Store Score in localStorage to browser reload
-- [ ] show Arcade Like table of scores
-- [ ] Levels
-- [ ] Level creator by user (drag&drop)
-- [ ] Clean UP plataform list on each level
-- [ ] Get score for amount of plataforms jumped on
+- [x] Store top10 scores of all users (json database)
+- [x] show Arcade Like table of scores
+- [ ] Store Score in localStorage for browser reload
 - [ ] Move some plataforms Up + Down
+- [ ] Get score for amount of plataforms jumped on
+- [ ] Levels
+- [ ] Clean UP plataform list on each level
+- [ ] Level creator by user (drag&drop)
 - [ ] Store Score in Database (will require Social Login for auth)
 - [ ] 2 player game with same keyboard
 - [ ] 2 player game multiplayer
