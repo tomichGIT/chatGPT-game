@@ -5,6 +5,8 @@ Original idea from Matt Wolfe Youtubes Channel: [I Used AI To Make A Game (ZERO 
 
 ![Fire Screenshot](https://www.kukumo.net/chatGPT-game/imgs/screenshot3.png)
 
+## Try it here:
+[chatGPT-game](kukumo.net/chatGPT-game/)
 
 ## Join us in creating an awesome platform game!
 Welcome to our platform game project, where we'll be using the power of ChatGPT to develop an amazing game together. In this project, we'll be creating a platformer game from scratch, sharing ideas, code snippets, and new prompts to help us along the way.
