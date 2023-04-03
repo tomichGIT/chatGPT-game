@@ -8,8 +8,15 @@
     let tf_particleSystem=true;
 
     
+    // variables de GameData y API
+    const btnSave = document.getElementById('btnSave');
+    const playerNameInput = document.getElementById('playerName');
+    let playerNick = playerNameInput.value;
+
+
     const canvas = document.getElementById('gameCanvas');    
     const canvasContainer = document.getElementById('canvas-container');
+    canvas.focus(); // focus on canvas to start playing.
     let ctx;
 
 
@@ -42,8 +49,13 @@
     canvas.width = canvasContainer.clientWidth;
     canvas.height = canvasContainer.clientHeight;
 
+    // elementos de GameData
+    let lastUpdate; // fecha de último juego TOTAL
+    let playCounts=0; // cantidad de veces que se jugó total
+    let highScoreEver=0; // puntaje más alto total
     
-    
+  
+   
     
    
     
@@ -63,6 +75,7 @@
     };
     
     const player = {
+        nick: playerNick,
         x: 50,
         y: canvas.height - 150 - 50, // Subtract 50 (player's height) to make the player start on the first platform
         width: 30,
@@ -158,7 +171,7 @@
 
     
     // ----------------------------------- Start Listeners -----------------------------------
-    window.addEventListener('keydown', (event) => { 
+    canvas.addEventListener('keydown', (event) => { 
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'KeyA', 'KeyD', 'KeyW', 'Space'].includes(event.code)) {
             event.preventDefault();
         }
@@ -166,18 +179,18 @@
     });
     
     
-    window.addEventListener('keyup', (event) => {
+    canvas.addEventListener('keyup', (event) => {
         keys[event.code] = false;
     });
     
-    window.addEventListener('keydown', (event) => {
+    canvas.addEventListener('keydown', (event) => {
         if (event.code === 'KeyN') {
             //console.log("key n");
-            switchLevel();
+            //switchLevel();
         }
     });
 
-    window.addEventListener('keyup', (event) => {
+    canvas.addEventListener('keyup', (event) => {
         //console.log("code: ",event.code);
         if( event.code === 'KeyP') {
             //console.log("key P");
@@ -227,6 +240,9 @@ const updateDebug =function (){
     - Explosion: ${player.explosionCounter} <br>
     - particles: ${particles.length} <br>
     - framerate: ${frameRate} <br>
+    ------------------------- <br>
+    - lastUpdate: ${lastUpdate} <br>
+    - playCounts: ${playCounts} <br>
     `;
 }   
 
@@ -242,11 +258,15 @@ const loadImages = () => {
         imagesLoaded++;
         if (imagesLoaded === numImages) {
 
+            player.nick = playerNick;
+
             // si cargo todo actualizo valores del player y arranco el loop
             player.playerImageFrame1=images['characterImage1'];
             player.playerImageFrame2=images['characterImage2'];
             player.currentImage=player.playerImageFrame1;
             gameLoop(); // Start the game loop startGame()
+
+            console.log(player);
         }
       };
       image.src = imagesToLoad[i].src;
@@ -453,6 +473,9 @@ function checkGroundCollision() {
 }
 
 function resetGame() {
+
+    sendHighScore(player);
+
     gameOver = false;
     player.x = 50;
     player.y = canvas.height - 150 - 50;
@@ -638,7 +661,7 @@ function render() {
     drawCharacter(); // Draw the character image
     
     drawScoreBox(); // Draw the score box and high score box
-    drawHighScoreBox();
+    //drawHighScoreBox();
     drawFire(canvas.width, canvas.height);
 
     if (gameOver) { // Display the "Game Over" message and "Reset" button
@@ -802,14 +825,25 @@ function drawScoreBox() {
     ctx.fillStyle = 'black';
     ctx.font = '20px Arial';
     ctx.fillText(`Score: ${player.score}`, 10, 30);
-}
 
-function drawHighScoreBox() {
+    drawHighScoreBox();
+}
+function drawHighScoreBox() { // players high score (this session)
     drawRoundedRect(canvas.width - 185, 5, 180, 35, 5, 'white', 'black', 3);
     ctx.fillStyle = 'black';
     ctx.font = '20px Arial';
-    ctx.fillText(`High Score: ${highScore}`, canvas.width - 180, 30);
+    ctx.fillText(`Your Score: ${highScore}`, canvas.width - 180, 30);
+    
+    drawHighScoreEverBox();
+
 }
+function drawHighScoreEverBox() { // high score ever (database)
+    drawRoundedRect(canvas.width - 185, 45, 180, 35, 5, 'white', 'black', 3);
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.fillText(`High Score: ${highScoreEver}`, canvas.width - 180, 70);
+}
+
 
 function drawGameOverAndReset() {
     // if (!gameOver) { return };
@@ -940,3 +974,163 @@ function animate() {
 
 // Start the animation loop
 window.requestAnimationFrame(animate);
+
+
+
+
+
+// --------------------------------- API functions ---------------------------------
+
+
+
+
+btnSave.addEventListener('click', function(event) {
+  event.preventDefault(); // prevent form submission
+  playerNick = playerNameInput.value;
+  player.nick= playerNick;
+  console.log("update player: ",player);
+  
+  canvas.focus(); // focus on canvas to start playing.
+  
+});
+
+function sendHighScore(player){
+    let data={
+        a: 'addScore',
+        score: player.score,
+        nick: player.nick
+    };
+    data=JSON.stringify(data);
+
+    // var formData = new FormData();
+    // formData.append('a', 'getGameData');
+
+    fetch('API/v1/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+          //'Content-Type': 'multipart/form-data'
+        },
+        body: data
+        //body: formData
+      })
+        .then(response => response.json())
+        .then(data => {
+          //updateScoreTable(data);
+          getGameData(); // ya trae los scores
+        })
+        .catch(error => {
+          console.error(error); // handle any errors here
+        });
+}
+
+function updateScoreTable(json_scores){
+
+    /*
+    [{"nick":"LOLI","date":"2023-04-03 22:13:46","score":9999,"ip":"::1"},{"nick":"FRAN","date":"2023-04-03
+    22:13:58","score":9999,"ip":"::1"},{"nick":"FRAN2","date":"2023-04-03
+    22:14:02","score":9999,"ip":"::1"},{"nick":"FRAN3","date":"2023-04-03
+    22:14:07","score":9999,"ip":"::1"},{"nick":"JUANITA35","date":"2023-04-03
+    22:13:24","score":99,"ip":"::1"},{"nick":"FRANASDASD","date":"2023-04-03 22:33:52","score":25,"ip":"192.168.1.105"}]
+    */
+
+    const table = document.createElement('table');
+
+    const tableHeader = document.createElement('tr');
+    const headerCells = ['Rank', 'Nickname', 'Score', 'Date'];
+    headerCells.forEach((cellText) => {
+      const cell = document.createElement('th');
+      cell.textContent = cellText;
+      tableHeader.appendChild(cell);
+    });
+    table.appendChild(tableHeader);
+    
+    const sortedScores = json_scores.sort((a, b) => b.score - a.score); // sort scores in descending order
+    
+    sortedScores.forEach((score, index) => {
+      if (index >= 10) return; // only show top 10 scores
+    
+      const row = document.createElement('tr');
+    
+      const rankCell = document.createElement('td');
+      rankCell.textContent = index + 1;
+      row.appendChild(rankCell);
+    
+      const nickCell = document.createElement('td');
+      nickCell.textContent = score.nick.toUpperCase();
+      row.appendChild(nickCell);
+    
+      const scoreCell = document.createElement('td');
+      scoreCell.textContent = score.score;
+      row.appendChild(scoreCell);
+    
+      const dateCell = document.createElement('td');
+      dateCell.textContent = score.date;
+      row.appendChild(dateCell);
+    
+      table.appendChild(row);
+    });
+    
+    const topScoresList = document.getElementById('topScoresList');
+    topScoresList.innerHTML = ''; // clear previous scores
+    topScoresList.appendChild(table);
+
+}
+
+function getScores(){
+    let data={
+        a: 'getScores'
+    };
+    data=JSON.stringify(data);
+
+    fetch('API/v1/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: data
+      })
+        .then(response => response.json())
+        .then(data => {
+          updateScoreTable(data);
+        })
+        .catch(error => {
+          console.error(error); // handle any errors here
+        });
+}
+
+function getGameData(){
+    let data={
+        a: 'getGameData'
+    };
+    data=JSON.stringify(data);
+
+    // var formData = new FormData();
+    // formData.append('a', 'getGameData');
+
+    fetch('API/v1/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+          //'Content-Type': 'multipart/form-data'
+        },
+        body: data
+        //body: formData
+      })
+        .then(response => response.json())
+        .then(data => {
+            
+          console.log(data); // handle the response data here
+
+            lastUpdate= data.lastUpdate;
+            playCounts= data.playCount.total;
+
+            getScores();
+
+        })
+        .catch(error => {
+          console.error(error); // handle any errors here
+        });
+}
+getGameData();
+
